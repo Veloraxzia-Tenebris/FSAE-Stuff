@@ -92,7 +92,7 @@ void printData() {
 		totalVoltage = 0.0;
 		for(int j = 0; j < 9; j++) {
 			totalVoltage += cell_codes[i][j] * 0.0001;
-			if(cell_codes[i][j] > maxVoltage) {
+			if(cell_codes[i][j] < maxVoltage) {
 				maxVoltage = cell_codes[i][j];
 			}
 			Serial.print(cell_codes[i][j] * 0.0001, 4);
