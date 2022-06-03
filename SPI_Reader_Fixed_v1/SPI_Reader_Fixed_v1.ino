@@ -79,7 +79,7 @@ void init_cfg() {
 // Function for printing all relevant data
 void printData() {
 	long elapsedTime = millis() - startTime;
-	maxVoltage = 0;
+	maxVoltage = cell_codes[0][0];
 
 	// Time elapsed
 	Serial.print("Time Elapsed (ms): ");
