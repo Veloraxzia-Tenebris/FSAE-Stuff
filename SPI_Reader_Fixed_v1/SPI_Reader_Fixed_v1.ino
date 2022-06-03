@@ -10,10 +10,6 @@
 
 #define TOTAL_IC 1
 
-// Constants for temperature conversion
-#define A 3
-#define B 4
-
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
 int maxVoltage = 0;
@@ -125,5 +121,5 @@ void printData() {
 
 // Function for converting voltage to Celsius
 void getTemperature() {
-	maxTemperature = (maxVoltage * 0.0001) * A + B;
+	maxTemperature = (((maxVoltage * 0.0001) - 3.61) * 60) / (-0.66);
 }
