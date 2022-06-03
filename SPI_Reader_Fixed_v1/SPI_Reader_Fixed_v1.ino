@@ -122,6 +122,7 @@ void printData() {
 	Serial.print("\n");
 }
 
+// Function for converting voltage to Celsius
 void getTemperature() {
 	maxTemperature = (maxVoltage * 0.0001) * A + B;
 }
