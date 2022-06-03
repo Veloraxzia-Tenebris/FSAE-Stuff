@@ -12,7 +12,7 @@
 
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
-int maxVoltage = 0;
+unsigned maxVoltage = 0;
 long startTime = 0;
 
 // Required arrays from demo code
@@ -92,7 +92,7 @@ void printData() {
 		totalVoltage = 0.0;
 		for(int j = 0; j < 9; j++) {
 			totalVoltage += cell_codes[i][j] * 0.0001;
-			if((int) cell_codes[i][j] > (int) maxVoltage) {
+			if(cell_codes[i][j] > maxVoltage) {
 				maxVoltage = cell_codes[i][j];
 			}
 			Serial.print(cell_codes[i][j] * 0.0001, 4);
@@ -121,5 +121,5 @@ void printData() {
 
 // Function for converting voltage to Celsius
 void getTemperature() {
-	maxTemperature = (((maxVoltage * 0.0001) - 3.61) * 60) / (-0.66);
+	maxTemperature = (((maxVoltage * 0.0001) - 3.71) * 60) / (-0.66);
 }
