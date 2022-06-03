@@ -8,7 +8,7 @@
 #include "LTC68042.h"
 #include "Average.h"
 
-#define TOTAL_IC 
+#define TOTAL_IC 1
 
 // Constants for temperature conversion
 #define A 3
@@ -17,7 +17,7 @@
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
 int maxVoltage = 0;
-int startTime = 0;
+long startTime = 0;
 
 // Required arrays from demo code
 uint16_t cell_codes[TOTAL_IC][12];
@@ -59,7 +59,7 @@ void loop() {
 	printData();
 
 	LTC6804_wrcfg(TOTAL_IC, tx_cfg);
-	delay(250);
+	delay(1000);
 }
 
 // Function for setting configuration bits
@@ -82,7 +82,8 @@ void init_cfg() {
 
 // Function for printing all relevant data
 void printData() {
-	int elapsedTime = millis() - startTime;
+	long elapsedTime = millis() - startTime;
+	maxVoltage = 0;
 
 	// Time elapsed
 	Serial.print("Time Elapsed (ms): ");
@@ -90,15 +91,15 @@ void printData() {
 	Serial.print("\t");
 
 	// Cell voltages
-	serialPrint("Cell Voltages 1 - 9 (V): ");
+	Serial.print("Cell Voltages 1 - 9 (V): ");
 	for(int i = 0 ; i < TOTAL_IC; i++) {
 		totalVoltage = 0.0;
 		for(int j = 0; j < 9; j++) {
 			totalVoltage += cell_codes[i][j] * 0.0001;
-			if(cell_codes[i][j] > maxVoltage) {
-				maxVoltage = cell_codes[i][j]
+			if((int) cell_codes[i][j] > (int) maxVoltage) {
+				maxVoltage = cell_codes[i][j];
 			}
-			Serial.print(cell_codes[i][j] * 0.0001);
+			Serial.print(cell_codes[i][j] * 0.0001, 4);
 			Serial.print(", ");
 		}
 	}
@@ -106,12 +107,12 @@ void printData() {
 
 	// Highest voltage
 	Serial.print("Max Voltage (V): ");
-	Serial.print(maxVoltage * 0.0001);
+	Serial.print(maxVoltage * 0.0001, 4);
 	Serial.print("\t");
 
 	// Total voltage
 	Serial.print("Total Voltage (V): ");
-	Serial.print(totalVoltage);
+	Serial.print(totalVoltage, 4);
 	Serial.print("\t");
 
 	// Temperature
