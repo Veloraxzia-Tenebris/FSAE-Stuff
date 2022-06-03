@@ -1,0 +1,1 @@
+// General Arduino code to read temps for the HVIs for FSAE LMS22
