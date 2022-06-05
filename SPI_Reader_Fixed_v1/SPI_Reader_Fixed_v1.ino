@@ -121,5 +121,9 @@ void printData() {
 
 // Function for converting voltage to Celsius
 void getTemperature() {
-	maxTemperature = (((maxVoltage * 0.0001) - 3.71) * 60) / (-0.66);
+	// y = mx + b
+	// m = -7140.054127
+	// b = 23468.21191
+	// From linear regression
+	maxTemperature = ((-7140) * maxVoltage) + 23468;
 }
