@@ -58,6 +58,31 @@ void loop() {
 	delay(1000);
 }
 
+// Functions for general integration
+void LTCSetup() {
+	// Startup
+	LTC6804_initialize();
+	// Configuration bits
+	init_cfg();
+	delay(1000);
+}
+
+void LTCLoop() {
+	// Exit low-power mode
+	wakeup_idle();
+	// Start ADC
+	LTC6804_adcv();
+	// Wait for ADC to finish
+	delay(10);
+	wakeup_idle();
+	// Read cell voltages
+	LTC6804_rdcv(0, TOTAL_IC, cell_codes);
+	// Convert voltage to Celsius
+	getTemperature();
+	LTC6804_wrcfg(TOTAL_IC, tx_cfg);
+	delay(250);
+}
+
 // Function for setting configuration bits
 void init_cfg() {
 	for(int i = 0; i < TOTAL_IC; i++) {
