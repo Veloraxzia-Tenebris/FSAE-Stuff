@@ -19,47 +19,47 @@ http://www.linear.com/product/LTC6804-1
 
 http://www.linear.com/product/LTC6804-1#demoboards
 
+REVISION HISTORY
+$Revision: 4437 $
+$Date: 2015-12-01 08:26:42 -0800 (Tue, 01 Dec 2015) $
 
-Copyright 2018(c) Analog Devices, Inc.
-
+Copyright (c) 2013, Linear Technology Corp.(LTC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
- - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
- - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in
-   the documentation and/or other materials provided with the
-   distribution.
- - Neither the name of Analog Devices, Inc. nor the names of its
-   contributors may be used to endorse or promote products derived
-   from this software without specific prior written permission.
- - The use of this software may or may not infringe the patent rights
-   of one or more patent holders.  This license does not release you
-   from the requirement that you obtain separate licenses from these
-   patent holders to use this software.
- - Use of the software either in source or binary form, must be run
-   on or directly connected to an Analog Devices Inc. component.
 
-THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of Linear Technology Corp.
+
+The Linear Technology Linduino is not affiliated with the official Arduino team.
+However, the Linduino is only possible because of the Arduino team's commitment
+to the open-source community.  Please, visit http://www.arduino.cc and
+http://store.arduino.cc , and consider a purchase that will help fund their
+ongoing work.
 
 Copyright 2013 Linear Technology Corp. (LTC)
 ***********************************************************/
 
-//! @ingroup BMS
-//! @{
 //! @defgroup LTC68042 LTC6804-2: Multicell Battery Monitor
-//! @}
 
 /*! @file
     @ingroup LTC68042
@@ -295,7 +295,7 @@ uint8_t LTC6804_rdcv(uint8_t reg,
         data_pec = pec15_calc(BYT_IN_REG, &cell_data[current_ic * NUM_RX_BYT ]);
         if (received_pec != data_pec)
         {
-          pec_error = -1;
+          pec_error--;//pec_error = -1;
         }
         data_counter=data_counter+2;
       }
@@ -320,10 +320,10 @@ uint8_t LTC6804_rdcv(uint8_t reg,
       }
       //b.iii
       received_pec = (cell_data[data_counter] << 8 )+ cell_data[data_counter + 1];
-      data_pec = pec15_calc(BYT_IN_REG, &cell_data[current_ic * NUM_RX_BYT]);
+      data_pec = pec15_calc(BYT_IN_REG, &cell_data[current_ic * NUM_RX_BYT * (reg-1)]);
       if (received_pec != data_pec)
       {
-        pec_error = -1;
+        pec_error--;//pec_error = -1;
       }
     }
   }
@@ -494,7 +494,7 @@ int8_t LTC6804_rdaux(uint8_t reg,
         }
         //a.iii
         received_pec = (data[data_counter]<<8)+ data[data_counter+1];
-        data_pec = pec15_calc(BYT_IN_REG, &data[current_ic*NUM_RX_BYT]);
+        data_pec = pec15_calc(BYT_IN_REG, &data[current_ic*NUM_RX_BYT*(gpio_reg-1)]);
         if (received_pec != data_pec)
         {
           pec_error = -1;
@@ -523,7 +523,7 @@ int8_t LTC6804_rdaux(uint8_t reg,
       }
       //b.iii
       received_pec = (data[data_counter]<<8) + data[data_counter+1];
-      data_pec = pec15_calc(6, &data[current_ic*8]);
+      data_pec = pec15_calc(6, &data[current_ic*8*(reg-1)]);
       if (received_pec != data_pec)
       {
         pec_error = -1;
@@ -732,17 +732,17 @@ void LTC6804_wrcfg(uint8_t total_ic,uint8_t config[][6])
 
   //2
   cmd_index = 4;
-  for (uint8_t current_ic = 0; current_ic < total_ic ; current_ic++)       // executes for each LTC6804 in stack,
+  for (uint8_t current_ic = total_ic; current_ic > 0; current_ic--)       // executes for each LTC6804 in stack,
   {
     for (uint8_t current_byte = 0; current_byte < BYTES_IN_REG; current_byte++) // executes for each byte in the CFGR register
     {
       // i is the byte counter
 
-      cmd[cmd_index] = config[current_ic][current_byte];    //adding the config data to the array to be sent
+      cmd[cmd_index] = config[current_ic-1][current_byte];    //adding the config data to the array to be sent
       cmd_index = cmd_index + 1;
     }
     //3
-    temp_pec = (uint16_t)pec15_calc(BYTES_IN_REG, &config[current_ic][0]);// calculating the PEC for each board
+    temp_pec = (uint16_t)pec15_calc(BYTES_IN_REG, &config[current_ic-1][0]);// calculating the PEC for each board
     cmd[cmd_index] = (uint8_t)(temp_pec >> 8);
     cmd[cmd_index + 1] = (uint8_t)temp_pec;
     cmd_index = cmd_index + 2;
