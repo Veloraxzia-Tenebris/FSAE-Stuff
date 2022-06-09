@@ -7,7 +7,10 @@
 #include "Linduino.h"
 #include "LT_SPI.h"
 #include "LTC68042.h"
-#include "BTMS_LTC_Temp.h""
+
+#include <SPI.h>
+
+#include "BTMS_LTC_Temp.h"
 
 // LTC68042.h
 #define MD_NORMAL 2
@@ -15,7 +18,17 @@
 #define CELL_CH_ALL 0
 #define AUX_CH_ALL 0
 
+// LTC68042.cpp
+/*!
+  6804 conversion command variables.
+*/
+uint8_t ADCV[2]; //!< Cell Voltage conversion command.
+uint8_t ADAX[2]; //!< GPIO conversion command.
+
 #define TOTAL_IC 1
+
+#define SCK
+#define MOSI
 
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
@@ -29,11 +42,27 @@ uint8_t tx_cfg[TOTAL_IC][6];
 uint8_t rx_cfg[TOTAL_IC][8];
 
 // Functions for general integration
-void LTCSetup() {
+void LTCSetup(LTCPin) {
 	// Startup
-	quikeval_SPI_connect();
-	spi_enable(SPI_CLOCK_DIV32);
-	set_adc(MD_NORMAL,DCP_DISABLED,CELL_CH_ALL,AUX_CH_ALL);
+	pinMode(SCK, OUTPUT);             //! 1) Setup SCK as output
+	pinMode(MOSI, OUTPUT);            //! 2) Setup MOSI as output
+	pinMode(LTCPin, OUTPUT);     //! 3) Setup CS as output
+	SPI.begin();
+	SPI.setClockDivider(SPI_CLOCK_DIV32);
+	uint8_t md_bits;
+	uint8_t MD = MD_NORMAL;
+	uint8_t DCP = DCP_DISABLED;
+	uint8_t CH = CELL_CH_ALL;
+	uint8_t CHG = AUX_CH_ALL;
+	md_bits = (MD & 0x02) >> 1;
+	ADCV[0] = md_bits + 0x02;
+	md_bits = (MD & 0x01) << 7;
+	ADCV[1] =  md_bits + 0x60 + (DCP<<4) + CH;
+	md_bits = (MD & 0x02) >> 1;
+	ADAX[0] = md_bits + 0x04;
+	md_bits = (MD & 0x01) << 7;
+	ADAX[1] = md_bits + 0x60 + CHG;
+
 	// Configuration bits
 	init_cfg();
 	delay(1000);
