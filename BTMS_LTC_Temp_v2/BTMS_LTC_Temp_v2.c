@@ -204,15 +204,15 @@ void LTCLoop(uint8_t LTCPin) {
 	uint8_t config[][6] = tx_cfg;
 	const uint8_t BYTES_IN_REG = 6;
 	const uint8_t CMD_LEN = 4+(8*total_ic);
-	uint8_t *cmd;
+	uint8_t *cmd2;
 	uint16_t temp_pec;
 	uint8_t cmd_index; //command counter
-	cmd = (uint8_t *)malloc(CMD_LEN*sizeof(uint8_t));
+	cmd2 = (uint8_t *)malloc(CMD_LEN*sizeof(uint8_t));
 	//1
-	cmd[0] = 0x00;
-	cmd[1] = 0x01;
-	cmd[2] = 0x3d;
-	cmd[3] = 0x6e;
+	cmd2[0] = 0x00;
+	cmd2[1] = 0x01;
+	cmd2[2] = 0x3d;
+	cmd2[3] = 0x6e;
 	//2
 	cmd_index = 4;
 	for (uint8_t current_ic = total_ic; current_ic > 0; current_ic--)       // executes for each LTC6804 in stack,
@@ -221,13 +221,13 @@ void LTCLoop(uint8_t LTCPin) {
 	{
 		// i is the byte counter
 
-		cmd[cmd_index] = config[current_ic-1][current_byte];    //adding the config data to the array to be sent
+		cmd2[cmd_index] = config[current_ic-1][current_byte];    //adding the config data to the array to be sent
 		cmd_index = cmd_index + 1;
 	}
 	//3
 	temp_pec = (uint16_t)pec15_calc(BYTES_IN_REG, &config[current_ic-1][0]);// calculating the PEC for each board
-	cmd[cmd_index] = (uint8_t)(temp_pec >> 8);
-	cmd[cmd_index + 1] = (uint8_t)temp_pec;
+	cmd2[cmd_index] = (uint8_t)(temp_pec >> 8);
+	cmd2[cmd_index + 1] = (uint8_t)temp_pec;
 	cmd_index = cmd_index + 2;
 	}
 	//4
@@ -237,16 +237,16 @@ void LTCLoop(uint8_t LTCPin) {
 	//5
 	for (int current_ic = 0; current_ic<total_ic; current_ic++)
 	{
-	cmd[0] = 0x80 + (current_ic<<3); //Setting address
-	temp_pec = pec15_calc(2, cmd);
-	cmd[2] = (uint8_t)(temp_pec >> 8);
-	cmd[3] = (uint8_t)(temp_pec);
+	cmd2[0] = 0x80 + (current_ic<<3); //Setting address
+	temp_pec = pec15_calc(2, cmd2);
+	cmd2[2] = (uint8_t)(temp_pec >> 8);
+	cmd2[3] = (uint8_t)(temp_pec);
 	output_high(LTCPin);
-	spi_write_array(4,cmd);
-	spi_write_array(8,&cmd[4+(8*current_ic)]);
+	spi_write_array(4,cmd2);
+	spi_write_array(8,&cmd2[4+(8*current_ic)]);
 	output_low(LTCPin);
 	}
-	free(cmd);
+	free(cmd2);
 	delay(250);
 }
 
