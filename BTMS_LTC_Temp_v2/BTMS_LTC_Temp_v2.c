@@ -9,6 +9,12 @@
 #include "LTC68042.h"
 #include "BTMS_LTC_Temp.h""
 
+// LTC68042.h
+#define MD_NORMAL 2
+#define DCP_DISABLED 0
+#define CELL_CH_ALL 0
+#define AUX_CH_ALL 0
+
 #define TOTAL_IC 1
 
 double maxTemperature = 0.0;
@@ -25,7 +31,9 @@ uint8_t rx_cfg[TOTAL_IC][8];
 // Functions for general integration
 void LTCSetup() {
 	// Startup
-	LTC6804_initialize();
+	quikeval_SPI_connect();
+	spi_enable(SPI_CLOCK_DIV32);
+	set_adc(MD_NORMAL,DCP_DISABLED,CELL_CH_ALL,AUX_CH_ALL);
 	// Configuration bits
 	init_cfg();
 	delay(1000);
