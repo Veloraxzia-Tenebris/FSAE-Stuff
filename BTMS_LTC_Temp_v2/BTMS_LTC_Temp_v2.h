@@ -23,3 +23,9 @@ void LTCSetup();
 // Function to read voltages and convert temperatures
 // maxTemperature is updated per call of this function with the hottest temperature
 void LTCLoop();
+
+// Function to set up initialization configuration for the LTC
+void init_cfg();
+
+// Function to convert the temperature using global variables
+void getTemperature();
