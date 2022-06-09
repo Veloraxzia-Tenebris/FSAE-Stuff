@@ -17,15 +17,24 @@
 
 // Put this in setup
 // Function for configuring and setting up the LTC
-void LTCSetup();
+void LTCSetup(uint8_t);
 
 // Put this in loop
 // Function to read voltages and convert temperatures
 // maxTemperature is updated per call of this function with the hottest temperature
-void LTCLoop();
+void LTCLoop(uint8_t);
 
 // Function to set up initialization configuration for the LTC
 void init_cfg();
 
 // Function to convert the temperature using global variables
 void getTemperature();
+
+// Function
+uint16_t pec15_calc(uint8_t, uint8_t*);
+
+void spi_write_array(uint8_t, uint8_t);
+
+void spi_write(int8_t);
+
+void LTC6804_rdcv_reg(uint8_t, uint8_t, uint8_t, uint8_t);

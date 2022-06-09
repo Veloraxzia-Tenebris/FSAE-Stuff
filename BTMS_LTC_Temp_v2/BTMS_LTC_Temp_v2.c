@@ -4,13 +4,16 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include "Linduino.h"
-#include "LT_SPI.h"
-#include "LTC68042.h"
-
 #include <SPI.h>
 
-#include "BTMS_LTC_Temp.h"
+#include "BTMS_LTC_Temp_v2.h"
+
+// Liduino.h
+//! @param pin pin to be driven LOW
+#define output_low(pin)   digitalWrite(pin, LOW)
+//! Set "pin" high
+//! @param pin pin to be driven HIGH
+#define output_high(pin)  digitalWrite(pin, HIGH)
 
 // LTC68042.h
 #define MD_NORMAL 2
@@ -27,8 +30,8 @@ uint8_t ADAX[2]; //!< GPIO conversion command.
 
 #define TOTAL_IC 1
 
-#define SCK
-#define MOSI
+#define SCK 9
+#define MOSI 8
 
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
@@ -42,7 +45,7 @@ uint8_t tx_cfg[TOTAL_IC][6];
 uint8_t rx_cfg[TOTAL_IC][8];
 
 // Functions for general integration
-void LTCSetup(LTCPin) {
+void LTCSetup(uint8_t LTCPin) {
 	// Startup
 	pinMode(SCK, OUTPUT);             //! 1) Setup SCK as output
 	pinMode(MOSI, OUTPUT);            //! 2) Setup MOSI as output
@@ -68,11 +71,11 @@ void LTCSetup(LTCPin) {
 	delay(1000);
 }
 
-void LTCLoop() {
+void LTCLoop(uint8_t LTCPin) {
 	// Exit low-power mode
-	output_low(LTC6804_CS);
+	output_high(LTCPin);
 	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
-	output_high(LTC6804_CS);
+	output_low(LTCPin);
 
 	// Start ADC
 	uint8_t cmd[4];
@@ -85,20 +88,23 @@ void LTCLoop() {
 	cmd[2] = (uint8_t)(temp_pec >> 8);
 	cmd[3] = (uint8_t)(temp_pec);
 	//3
-	wakeup_idle (); //This will guarantee that the LTC6804 isoSPI port is awake. This command can be removed.
+	output_high(LTCPin);
+	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
+	output_low(LTCPin); //This will guarantee that the LTC6804 isoSPI port is awake. This command can be removed.
 	//4
-	output_low(LTC6804_CS);
+	output_low(LTCPin);
 	spi_write_array(4,cmd);
-	output_high(LTC6804_CS);
+	output_high(LTCPin);
 
 	// Wait for ADC to finish
 	delay(10);
-	output_low(LTC6804_CS);
+	output_high(LTCPin);
 	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
-	output_high(LTC6804_CS);
+	output_low(LTCPin);
 
 	// Read cell voltages
-	//LTC6804_rdcv(0, TOTAL_IC, cell_codes);
+	uint8_t reg = 0;
+	uint8_t total_ic = TOTAL_IC;
 	const uint8_t NUM_RX_BYT = 8;
 	const uint8_t BYT_IN_REG = 6;
 	const uint8_t CELL_IN_REG = 3;
@@ -116,7 +122,7 @@ void LTCLoop() {
 	for (uint8_t cell_reg = 1; cell_reg<5; cell_reg++)               //executes once for each of the LTC6804 cell voltage registers
 	{
 		data_counter = 0;
-		LTC6804_rdcv_reg(cell_reg, total_ic,cell_data);
+		LTC6804_rdcv_reg(cell_reg, total_ic,cell_data, LTCPin);
 		for (uint8_t current_ic = 0 ; current_ic < total_ic; current_ic++) // executes for every LTC6804 in the stack
 		{
 		// current_ic is used as an IC counter
@@ -143,7 +149,7 @@ void LTCLoop() {
 	else
 	{
 	//b.i
-	LTC6804_rdcv_reg(reg, total_ic,cell_data);
+	LTC6804_rdcv_reg(reg, total_ic,cell_data, LTCPin);
 	for (uint8_t current_ic = 0 ; current_ic < total_ic; current_ic++) // executes for every LTC6804 in the stack
 	{
 		// current_ic is used as an IC counter
@@ -170,7 +176,8 @@ void LTCLoop() {
 
 	// Convert voltage to Celsius
 	getTemperature();
-	//LTC6804_wrcfg(TOTAL_IC, tx_cfg);
+	uint8_t total_ic = TOTAL_IC;
+	uint8_t config[][6] = tx_cfg;
 	const uint8_t BYTES_IN_REG = 6;
 	const uint8_t CMD_LEN = 4+(8*total_ic);
 	uint8_t *cmd;
@@ -200,7 +207,9 @@ void LTCLoop() {
 	cmd_index = cmd_index + 2;
 	}
 	//4
-	wakeup_idle ();                                //This will guarantee that the LTC6804 isoSPI port is awake.This command can be removed.
+	output_high(LTCPin);
+	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
+	output_low(LTCPin);                                //This will guarantee that the LTC6804 isoSPI port is awake.This command can be removed.
 	//5
 	for (int current_ic = 0; current_ic<total_ic; current_ic++)
 	{
@@ -208,10 +217,10 @@ void LTCLoop() {
 	temp_pec = pec15_calc(2, cmd);
 	cmd[2] = (uint8_t)(temp_pec >> 8);
 	cmd[3] = (uint8_t)(temp_pec);
-	output_low(LTC6804_CS);
+	output_high(LTCPin);
 	spi_write_array(4,cmd);
 	spi_write_array(8,&cmd[4+(8*current_ic)]);
-	output_high(LTC6804_CS);
+	output_low(LTCPin);
 	}
 	free(cmd);
 	delay(250);
@@ -285,4 +294,83 @@ void getTemperature() {
 	// b = 23468.21191
 	// From linear regression
 	maxTemperature = ((-7140) * maxVoltage) + 23468;
+}
+
+uint16_t pec15_calc(uint8_t len, uint8_t *data) {
+  uint16_t remainder,addr;
+  remainder = 16;//initialize the PEC
+  for (uint8_t i = 0; i<len; i++) // loops for each byte in data array
+  {
+    addr = ((remainder>>7)^data[i])&0xff;//calculate PEC table address
+    remainder = (remainder<<8)^crc15Table[addr];
+  }
+  return(remainder*2);//The CRC15 has a 0 in the LSB so the remainder must be multiplied by 2
+}
+
+void spi_write_array(uint8_t len, // Option: Number of bytes to be written on the SPI port
+                     uint8_t data[] //Array of bytes to be written on the SPI port
+                    )
+{
+  for (uint8_t i = 0; i < len; i++)
+  {
+    spi_write((char)data[i]);
+  }
+}
+
+void spi_write(int8_t  data)  // Byte to be written to SPI port
+{
+  SPDR = data;                  //! 1) Start the SPI transfer
+  while (!(SPSR & _BV(SPIF)));  //! 2) Wait until transfer complete
+}
+
+void LTC6804_rdcv_reg(uint8_t reg,
+                      uint8_t total_ic,
+                      uint8_t *data,
+				  uint8_t LTCPin
+                     )
+{
+  uint8_t cmd[4];
+  uint16_t temp_pec;
+
+  //1
+  if (reg == 1)
+  {
+    cmd[1] = 0x04;
+    cmd[0] = 0x00;
+  }
+  else if (reg == 2)
+  {
+    cmd[1] = 0x06;
+    cmd[0] = 0x00;
+  }
+  else if (reg == 3)
+  {
+    cmd[1] = 0x08;
+    cmd[0] = 0x00;
+  }
+  else if (reg == 4)
+  {
+    cmd[1] = 0x0A;
+    cmd[0] = 0x00;
+  }
+
+  //2
+
+
+  //3
+	output_high(LTCPin);
+	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
+	output_low(LTCPin); //This will guarantee that the LTC6804 isoSPI port is awake. This command can be removed.
+
+  //4
+  for (int current_ic = 0; current_ic<total_ic; current_ic++)
+  {
+    cmd[0] = 0x80 + (current_ic<<3); //Setting address
+    temp_pec = pec15_calc(2, cmd);
+    cmd[2] = (uint8_t)(temp_pec >> 8);
+    cmd[3] = (uint8_t)(temp_pec);
+    output_high(LTCPin);
+    spi_write_read(cmd,4,&data[current_ic*8],8);
+    output_low(LTCPin);
+  }
 }
