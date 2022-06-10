@@ -17,7 +17,6 @@
 
 #include "Linduino.h"
 #include "LT_SPI.h"
-#include "SERCOM.h"
 
 // Put this in setup
 // Function for configuring and setting up the LTC
@@ -32,7 +31,7 @@ double LTCLoop(uint8_t);
 void init_cfg();
 
 // Function to convert the temperature using global variables
-void getTemperature();
+double getTemperature();
 
 // Function
 uint16_t pec15_calc(uint8_t, uint8_t*);

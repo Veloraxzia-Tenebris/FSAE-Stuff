@@ -2,8 +2,6 @@
 // Adapted from the Linduino demo programs
 // Remade to fit all of LMS22's weird quirks
 
-#include "SERCOM.h"
-#include "variant.h"
 #include <Arduino.h>
 #include <stdint.h>
 #include "Linduino.h"
@@ -96,6 +94,26 @@ void LTCSetup(uint8_t LTCPin) {
 }
 
 double LTCLoop(uint8_t LTCPin) {
+	double temp = 0.0;
+	// General setup
+	uint8_t md_bits;
+	uint8_t MD = MD_NORMAL;
+	uint8_t DCP = DCP_DISABLED;
+	uint8_t CH = CELL_CH_ALL;
+	uint8_t CHG = AUX_CH_ALL;
+	md_bits = (MD & 0x02) >> 1;
+	ADCV[0] = md_bits + 0x02;
+	md_bits = (MD & 0x01) << 7;
+	ADCV[1] =  md_bits + 0x60 + (DCP<<4) + CH;
+	md_bits = (MD & 0x02) >> 1;
+	ADAX[0] = md_bits + 0x04;
+	md_bits = (MD & 0x01) << 7;
+	ADAX[1] = md_bits + 0x60 + CHG;
+
+	// Configuration bits
+	init_cfg();
+	delay(10);
+
 	// Exit low-power mode
 	wakeup_idle(LTCPin);
 
@@ -109,9 +127,11 @@ double LTCLoop(uint8_t LTCPin) {
 	// Read cell voltages
 	LTC6804_rdcv(0, TOTAL_IC, cell_codes, LTCPin);
 	// Convert voltage to Celsius
-	getTemperature();
+	temp = getTemperature();
 	LTC6804_wrcfg(TOTAL_IC, tx_cfg, LTCPin);
-	delay(250);
+	delay(10);
+
+	return temp;
 }
 
 // Function for setting configuration bits
@@ -176,12 +196,13 @@ void printData() {
 }
 
 // Function for converting voltage to Celsius
-void getTemperature() {
+double getTemperature() {
 	// y = mx + b
 	// m = -7140.054127
 	// b = 23468.21191
 	// From linear regression
 	maxTemperature = ((-7140) * maxVoltage) + 23468;
+	return maxTemperature;
 }
 
 uint16_t pec15_calc(uint8_t len, uint8_t *data) {
