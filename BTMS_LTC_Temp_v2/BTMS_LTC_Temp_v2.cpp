@@ -140,14 +140,16 @@ void init_cfg() {
 		tx_cfg[i][0] = 0xFE;
 		//tx_cfg[i][1] = 0x04;
 		// 2.0 V
-		tx_cfg[i][1] = 0x4E1;
+		tx_cfg[i][1] = 0x00;
 		//tx_cfg[i][2] = 0xE1;
 		// 3.6 V
-		tx_cfg[i][2] = 0x8CA;
+		tx_cfg[i][2] = 0x00;
 		tx_cfg[i][3] = 0x00;
+		// CFGR4 used for DCC 8 - 1
 		tx_cfg[i][4] = 0x00;
-		// tx_cfg[i][5] = 0x00;
-		// sets the software timer to 1 minute
+		//tx_cfg[i][5] = 0x00;
+		// Sets the software timer to 1 minute
+		// CFGR5 bits 3 - 0 used for DCC 12 - 9
 		tx_cfg[i][5] = 0x20;
 	}
 }
