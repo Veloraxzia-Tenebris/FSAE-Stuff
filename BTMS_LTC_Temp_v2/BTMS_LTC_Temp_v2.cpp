@@ -90,7 +90,7 @@ void LTCSetup(uint8_t LTCPin) {
 
 	// Configuration bits
 	init_cfg();
-	delay(10);
+	delay(1000);
 }
 
 double LTCLoop(uint8_t LTCPin) {
@@ -252,8 +252,9 @@ void LTC6804_rdcv_reg(uint8_t reg,
 
   //3
 	output_high(LTCPin);
-	delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
+	delay(30); //Guarantees the isoSPI will be in ready mode
 	output_low(LTCPin); //This will guarantee that the LTC6804 isoSPI port is awake. This command can be removed.
+	delay(10);
 
   //4
   for (int current_ic = 0; current_ic<total_ic; current_ic++)
@@ -263,16 +264,20 @@ void LTC6804_rdcv_reg(uint8_t reg,
     cmd[2] = (uint8_t)(temp_pec >> 8);
     cmd[3] = (uint8_t)(temp_pec);
     output_high(LTCPin);
+    delay(10);
     spi_write_read(cmd,4,&data[current_ic*8],8);
+    delay(10);
     output_low(LTCPin);
+    delay(10);
   }
 }
 
 void wakeup_idle(uint8_t LTCPin)
 {
   output_high(LTCPin);
-  delayMicroseconds(10); //Guarantees the isoSPI will be in ready mode
+  delay(30); //Guarantees the isoSPI will be in ready mode
   output_low(LTCPin);
+  delay(10);
 }
 
 void LTC6804_adcv(uint8_t LTCPin)
@@ -295,8 +300,11 @@ void LTC6804_adcv(uint8_t LTCPin)
 
   //4
   output_high(LTCPin);
+  delay(10);
   spi_write_array(4,cmd);
+  delay(10);
   output_low(LTCPin);
+  delay(10);
 
 }
 
@@ -422,9 +430,13 @@ void LTC6804_wrcfg(uint8_t total_ic,uint8_t config[][6], uint8_t LTCPin)
     cmd[2] = (uint8_t)(temp_pec >> 8);
     cmd[3] = (uint8_t)(temp_pec);
     output_high(LTCPin);
+    delay(10);
     spi_write_array(4,cmd);
+    delay(10);
     spi_write_array(8,&cmd[4+(8*current_ic)]);
+    delay(10);
     output_low(LTCPin);
+    delay(10);
   }
   free(cmd);
 }

@@ -6,7 +6,7 @@
 #include "BTMS_LTC_Temp_v2.h"
 
 // Upper / Lower pin
-#define UPPER_LOWER 14
+#define UPPER_LOWER 5
 
 double temperatures[10];
 int pins[5] = {0, 1, 2, 6, 4};
@@ -20,7 +20,14 @@ void setup() {
 	SPI.begin();
 	SPI.setClockDivider(SPI_CLOCK_DIV32);
 	for(int k = 0; k < 5; k++) {
+		digitalWrite(UPPER_LOWER, LOW);
+		delay(10);
 		LTCSetup(pins[k]);
+		delay(10);
+		digitalWrite(UPPER_LOWER, HIGH);
+		delay(10);
+		LTCSetup(pins[k]);
+		delay(10);
 	}
 	delay(1000);
 }
@@ -28,10 +35,13 @@ void setup() {
 void loop() {
 	for(int k = 0; k < 5; k++) {
 		digitalWrite(UPPER_LOWER, LOW);
+		delay(10);
 		temperatures[k] = LTCLoop(pins[k]);
-		delay(30);
+		delay(10);
 		digitalWrite(UPPER_LOWER, HIGH);
+		delay(10);
 		temperatures[k + 1] = LTCLoop(pins[k]);
+		delay(10);
 	}
 
 	Serial.println();
