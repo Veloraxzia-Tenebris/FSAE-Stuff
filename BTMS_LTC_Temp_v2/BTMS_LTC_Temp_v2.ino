@@ -73,13 +73,20 @@ double temperatures[10];
 int pins[5] = {0, 1, 2, 6, 4};
 
 void setup() {
+	// Sets upper / lower pin to output
 	pinMode(UPPER_LOWER, OUTPUT);
+	// Sets all 5 chip selects to output
 	for(int k = 0; k < 5; k++) {
 		pinMode(pins[k], OUTPUT);
 	}
+
 	Serial.begin(9600);
+
+	// SPI configuration stuff
 	SPI.begin();
 	SPI.setClockDivider(SPI_CLOCK_DIV32);
+
+	// LTC Setup for all chips
 	for(int k = 0; k < 5; k++) {
 		digitalWrite(UPPER_LOWER, LOW);
 		delay(10);
@@ -90,10 +97,13 @@ void setup() {
 		LTCSetup(pins[k]);
 		delay(10);
 	}
+
+	// Wait, because, uhh...
 	delay(1000);
 }
 
 void loop() {
+	// 
 	for(int k = 0; k < 5; k++) {
 		digitalWrite(UPPER_LOWER, LOW);
 		delay(10);
@@ -195,6 +205,32 @@ void init_cfg() {
 		// Sets the software timer to 1 minute
 		// CFGR5 bits 3 - 0 used for DCC 12 - 9
 		tx_cfg[i][5] = 0x20;
+	}
+}
+
+// Function for setting configuration bits specifically for discharge cell [bits]
+void init_cfg(int cell) {
+	uint8_t output = 1;
+	for(int i = 0; i < TOTAL_IC; i++) {
+		tx_cfg[i][0] = 0xFE;
+		//tx_cfg[i][1] = 0x04;
+		// 2.0 V
+		tx_cfg[i][1] = 0x00;
+		//tx_cfg[i][2] = 0xE1;
+		// 3.6 V
+		tx_cfg[i][2] = 0x00;
+		tx_cfg[i][3] = 0x00;
+		// CFGR4 used for DCC 8 - 1
+		// CFGR5 bits 3 - 0 used for DCC 12 - 9
+		for(int j = 0; j < cell - 1; j++) {
+			output *= 2;
+		}
+		if(cell <= 8) {
+			tx_cfg[i][4] = output;
+		} else if(cell > 8) {
+			output <<= 8;
+			tx_cfg[i][5] = 0x20 | output;
+		}
 	}
 }
 
