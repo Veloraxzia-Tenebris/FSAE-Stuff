@@ -58,6 +58,8 @@ uint8_t ADAX[2]; //!< GPIO conversion command.
 double maxTemperature = 0.0;
 double totalVoltage = 0.0;
 unsigned maxVoltage = 0;
+unsigned lowestTempVoltage = 0;
+double totalMaxTemperature = 0.0;
 long startTime = 0;
 
 // Required arrays from demo code
@@ -69,6 +71,8 @@ uint8_t rx_cfg[TOTAL_IC][8];
 // Upper / Lower pin
 #define UPPER_LOWER 5
 
+double cellVoltages[9];
+double tempVoltages[9];
 double temperatures[10];
 int pins[5] = {0, 1, 2, 6, 4};
 
@@ -103,15 +107,61 @@ void setup() {
 }
 
 void loop() {
-	// 
+	// Variable for temporarily storing temperature voltage data
+	uint16_t temp = 0;
+	// Main loop to read cell and shunt reference voltages
 	for(int k = 0; k < 5; k++) {
+		// Set to read from lower chip
 		digitalWrite(UPPER_LOWER, LOW);
 		delay(10);
-		temperatures[k] = LTCLoop(pins[k]);
+		// Set configuration to default
+		init_cfg();
+		// Read all cell voltages from chip
+		LTCLoop(pins[k]);
 		delay(10);
+		// Read individual shunt reference voltages from chip
+		for(int i = 0; i < 9; i++) {
+			// Set configuration to S_i pin, bridge between S_i and C_(i - 1)
+			init_cfg(i + 1);
+			LTCLoop(pins[k]);
+			// Pull the correct pin voltage
+			tempVoltages[i] = cell_codes[0][i];
+		}
+		// Convert voltage to Celsius
+		storeData();
+		setData();
+		getTemperature();
+		temperatures[k] = maxTemperature;
+
+		printData();
+
+		// Set to read from upper chip
 		digitalWrite(UPPER_LOWER, HIGH);
 		delay(10);
-		temperatures[k + 1] = LTCLoop(pins[k]);
+		// Set configuration to default
+		init_cfg();
+		// Read all cell voltages from chip
+		LTCLoop(pins[k]);
+		delay(10);
+		// Convert voltage to Celsius
+		storeData();
+		getTemperature();
+		delay(10);
+		// Read individual shunt reference voltages from chip
+		for(int i = 0; i < 9; i++) {
+			// Set configuration to S_i pin, bridge between S_i and C_(i - 1)
+			init_cfg(i + 1);
+			LTCLoop(pins[k]);
+			// Pull the correct pin voltage
+			tempVoltages[i] = cell_codes[0][i];
+		}
+		// Convert voltage to Celsius
+		storeData();
+		setData();
+		getTemperature();
+		temperatures[k + 1] = maxTemperature;
+
+		printData();
 		delay(10);
 	}
 
@@ -121,10 +171,13 @@ void loop() {
 		Serial.print(", ");
 	}
 	Serial.println();
+	Serial.print("Max temp is: ");
+	Serial.print(totalMaxTemperature);
+	Serial.println();
 }
 
 
-// Functions for general integration
+// Function for setting up one chip
 void LTCSetup(uint8_t LTCPin) {
 	// Startup
 	spi_enable(SPI_CLOCK_DIV32);
@@ -147,29 +200,13 @@ void LTCSetup(uint8_t LTCPin) {
 	delay(1000);
 }
 
-double LTCLoop(uint8_t LTCPin) {
-	double temp = 0.0;
-	// General setup
-	uint8_t md_bits;
-	uint8_t MD = MD_NORMAL;
-	uint8_t DCP = DCP_DISABLED;
-	uint8_t CH = CELL_CH_ALL;
-	uint8_t CHG = AUX_CH_ALL;
-	md_bits = (MD & 0x02) >> 1;
-	ADCV[0] = md_bits + 0x02;
-	md_bits = (MD & 0x01) << 7;
-	ADCV[1] =  md_bits + 0x60 + (DCP<<4) + CH;
-	md_bits = (MD & 0x02) >> 1;
-	ADAX[0] = md_bits + 0x04;
-	md_bits = (MD & 0x01) << 7;
-	ADAX[1] = md_bits + 0x60 + CHG;
-
-	// Configuration bits
-	init_cfg();
-	delay(10);
-
+// Function for reading from one chip
+void LTCLoop(uint8_t LTCPin) {
 	// Exit low-power mode
 	wakeup_idle(LTCPin);
+
+	// Write configuration to LTC
+	LTC6804_wrcfg(TOTAL_IC, tx_cfg, LTCPin);
 
 	// Start ADC
 	LTC6804_adcv(LTCPin);
@@ -180,12 +217,6 @@ double LTCLoop(uint8_t LTCPin) {
 
 	// Read cell voltages
 	LTC6804_rdcv(0, TOTAL_IC, cell_codes, LTCPin);
-	// Convert voltage to Celsius
-	temp = getTemperature();
-	LTC6804_wrcfg(TOTAL_IC, tx_cfg, LTCPin);
-	delay(10);
-
-	return temp;
 }
 
 // Function for setting configuration bits
@@ -234,6 +265,42 @@ void init_cfg(int cell) {
 	}
 }
 
+// Function to update global array variables
+void storeData() {
+	maxVoltage = cell_codes[0][0];
+	for(int i = 0 ; i < TOTAL_IC; i++) {
+		totalVoltage = 0.0;
+		for(int j = 0; j < 9; j++) {
+			totalVoltage += cell_codes[i][j] * 0.0001;
+			if(cell_codes[i][j] < maxVoltage) {
+				maxVoltage = cell_codes[i][j];
+			}
+			cellVoltages[j] = cell_codes[i][j];
+		}
+	}
+}
+
+// Function to update temperature and voltage global variables
+void setData() {
+	// Reset lowest temp
+	lowestTempVoltage = tempVoltages[0];
+	for(int i = 0; i < 9; i++) {
+		if(lowestTempVoltage > tempVoltages[i]) {
+			lowestTempVoltage = tempVoltages[i];
+		}
+	}
+}
+
+// Function to update final accumulator max battery temperature
+void getMaxTemp() {
+	totalMaxTemperature = temperatures[0];
+	for(int i = 0; i < 10; i++) {
+		if(totalMaxTemperature < temperatures[i]) {
+			totalMaxTemperature = temperatures[i];
+		}
+	}
+}
+
 // Function for printing all relevant data
 void printData() {
 	long elapsedTime = millis() - startTime;
@@ -245,23 +312,23 @@ void printData() {
 	Serial.print("\t");
 
 	// Cell voltages
-	Serial.print("Cell Voltages 1 - 9 (V): ");
-	for(int i = 0 ; i < TOTAL_IC; i++) {
-		totalVoltage = 0.0;
-		for(int j = 0; j < 9; j++) {
-			totalVoltage += cell_codes[i][j] * 0.0001;
-			if(cell_codes[i][j] < maxVoltage) {
-				maxVoltage = cell_codes[i][j];
-			}
-			Serial.print(cell_codes[i][j] * 0.0001, 4);
-			Serial.print(", ");
-		}
+	Serial.print("Cell and Temp Voltages 1 - 9 (V): ");
+	for(int i = 0 ; i < 9; i++) {
+		Serial.print(cellVoltages[i] * 0.0001, 2);
+		Serial.print(", ");
 	}
 	Serial.print("\t");
 
-	// Highest voltage
-	Serial.print("Max Voltage (V): ");
-	Serial.print(maxVoltage * 0.0001, 4);
+	Serial.print("T: ");
+	for(int i = 0 ; i < 9; i++) {
+		Serial.print(tempVoltages[i] * 0.0001, 2);
+		Serial.print(", ");
+	}
+	Serial.print("\t");
+
+	// Highest voltage of a temperature module
+	Serial.print("Min Voltage (V): ");
+	Serial.print(lowestTempVoltage * 0.0001, 4);
 	Serial.print("\t");
 
 	// Total voltage
@@ -278,13 +345,12 @@ void printData() {
 }
 
 // Function for converting voltage to Celsius
-double getTemperature() {
+void getTemperature() {
 	// y = mx + b
 	// m = -7140.054127
 	// b = 23468.21191
 	// From linear regression
-	maxTemperature = ((-7140) * maxVoltage) + 23468;
-	return maxTemperature;
+	maxTemperature = (-94.1176) * (lowestTempVoltage - 2.2);
 }
 
 uint16_t pec15_calc(uint8_t len, uint8_t *data) {

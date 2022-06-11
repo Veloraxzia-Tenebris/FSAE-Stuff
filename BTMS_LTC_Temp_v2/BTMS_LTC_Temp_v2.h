@@ -25,15 +25,25 @@ void LTCSetup(uint8_t);
 // Put this in loop
 // Function to read voltages and convert temperatures
 // maxTemperature is updated per call of this function with the hottest temperature
-double LTCLoop(uint8_t);
+void LTCLoop(uint8_t);
 
 // Function to set up initialization configuration for the LTC
 void init_cfg();
+void init_cfg(int);
+
+// Function to update global array variables
+void storeData();
+
+// Function to update temperature and voltage global variables
+void setData();
+
+// Function to update final accumulator max battery temperature
+void getMaxTemp();
 
 // Function to convert the temperature using global variables
-double getTemperature();
+void getTemperature();
 
-// Function
+// Functions from Linduino
 uint16_t pec15_calc(uint8_t, uint8_t*);
 
 void LTC6804_rdcv_reg(uint8_t, uint8_t, uint8_t, uint8_t);
