@@ -128,7 +128,7 @@ void loop() {
 		// Convert voltage to Celsius
 		setData();
 		getTemperature();
-		temperatures[k] = maxTemperature;
+		temperatures[k * 2] = maxTemperature;
 
 		printData();
 
@@ -159,10 +159,11 @@ void loop() {
 		tempVoltages[3] = cell_codes[0][3];
 		tempVoltages[5] = cell_codes[0][5];
 		tempVoltages[7] = cell_codes[0][7];
+
 		// Convert voltage to Celsius
 		setData();
 		getTemperature();
-		temperatures[k + 1] = maxTemperature;
+		temperatures[(k * 2) + 1] = maxTemperature;
 
 		printData();
 	}
