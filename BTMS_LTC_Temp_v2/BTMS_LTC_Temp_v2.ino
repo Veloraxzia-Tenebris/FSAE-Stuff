@@ -18,7 +18,7 @@
 
 // LTC68042.h
 #define MD_NORMAL 2
-#define DCP_DISABLED 0
+#define DCP_ENABLED 1
 #define CELL_CH_ALL 0
 #define AUX_CH_ALL 0
 static const unsigned int crc15Table[256] = {0x0,0xc599, 0xceab, 0xb32, 0xd8cf, 0x1d56, 0x1664, 0xd3fd, 0xf407, 0x319e, 0x3aac,  //!<precomputed CRC15 Table
@@ -185,7 +185,7 @@ void loop() {
 void LTCSetup(uint8_t LTCPin) {
 	uint8_t md_bits;
 	uint8_t MD = MD_NORMAL;
-	uint8_t DCP = DCP_DISABLED;
+	uint8_t DCP = DCP_ENABLED;
 	uint8_t CH = CELL_CH_ALL;
 	uint8_t CHG = AUX_CH_ALL;
 	md_bits = (MD & 0x02) >> 1;
