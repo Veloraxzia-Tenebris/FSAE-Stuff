@@ -91,44 +91,41 @@ void setup() {
 	SPI.setClockDivider(SPI_CLOCK_DIV32);
 
 	// LTC Setup for all chips
-	for(int k = 0; k < 5; k++) {
-		digitalWrite(UPPER_LOWER, LOW);
-		delay(10);
-		LTCSetup(pins[k]);
-		delay(10);
-		digitalWrite(UPPER_LOWER, HIGH);
-		delay(10);
-		LTCSetup(pins[k]);
-		delay(10);
-	}
-
-	// Wait, because, uhh...
-	delay(1000);
+	LTCSetup(pins[0]);
 }
 
 void loop() {
-	// Variable for temporarily storing temperature voltage data
-	uint16_t temp = 0;
 	// Main loop to read cell and shunt reference voltages
 	for(int k = 0; k < 5; k++) {
 		// Set to read from lower chip
 		digitalWrite(UPPER_LOWER, LOW);
-		delay(10);
+		/*
 		// Set configuration to default
 		init_cfg();
 		// Read all cell voltages from chip
 		LTCLoop(pins[k]);
-		delay(10);
-		// Read individual shunt reference voltages from chip
-		for(int i = 0; i < 9; i++) {
-			// Set configuration to S_i pin, bridge between S_i and C_(i - 1)
-			init_cfg(i + 1);
-			LTCLoop(pins[k]);
-			// Pull the correct pin voltage
-			tempVoltages[i] = cell_codes[0][i];
-		}
-		// Convert voltage to Celsius
 		storeData();
+		*/
+		// Read individual shunt reference voltages from chip
+		// Set configuration to   0001   0101 0101
+		init_cfg(1);
+		LTCLoop(pins[k]);
+		// Pull the correct pin voltages
+		tempVoltages[0] = cell_codes[0][0];
+		tempVoltages[2] = cell_codes[0][2];
+		tempVoltages[4] = cell_codes[0][4];
+		tempVoltages[6] = cell_codes[0][6];
+		tempVoltages[8] = cell_codes[0][8];
+		// Set configuration to   0000   1010 1010
+		init_cfg(0);
+		LTCLoop(pins[k]);
+		// Pull the correct pin voltages
+		tempVoltages[1] = cell_codes[0][1];
+		tempVoltages[3] = cell_codes[0][3];
+		tempVoltages[5] = cell_codes[0][5];
+		tempVoltages[7] = cell_codes[0][7];
+
+		// Convert voltage to Celsius
 		setData();
 		getTemperature();
 		temperatures[k] = maxTemperature;
@@ -137,34 +134,40 @@ void loop() {
 
 		// Set to read from upper chip
 		digitalWrite(UPPER_LOWER, HIGH);
-		delay(10);
+		/*
 		// Set configuration to default
 		init_cfg();
 		// Read all cell voltages from chip
 		LTCLoop(pins[k]);
-		delay(10);
-		// Convert voltage to Celsius
 		storeData();
-		getTemperature();
-		delay(10);
+		*/
 		// Read individual shunt reference voltages from chip
-		for(int i = 0; i < 9; i++) {
-			// Set configuration to S_i pin, bridge between S_i and C_(i - 1)
-			init_cfg(i + 1);
-			LTCLoop(pins[k]);
-			// Pull the correct pin voltage
-			tempVoltages[i] = cell_codes[0][i];
-		}
+		// Set configuration to   0001   0101 0101
+		init_cfg(1);
+		LTCLoop(pins[k]);
+		// Pull the correct pin voltages
+		tempVoltages[0] = cell_codes[0][0];
+		tempVoltages[2] = cell_codes[0][2];
+		tempVoltages[4] = cell_codes[0][4];
+		tempVoltages[6] = cell_codes[0][6];
+		tempVoltages[8] = cell_codes[0][8];
+		// Set configuration to   0000   1010 1010
+		init_cfg(0);
+		LTCLoop(pins[k]);
+		// Pull the correct pin voltages
+		tempVoltages[1] = cell_codes[0][1];
+		tempVoltages[3] = cell_codes[0][3];
+		tempVoltages[5] = cell_codes[0][5];
+		tempVoltages[7] = cell_codes[0][7];
 		// Convert voltage to Celsius
-		storeData();
 		setData();
 		getTemperature();
 		temperatures[k + 1] = maxTemperature;
 
 		printData();
-		delay(10);
 	}
 
+	getMaxTemp();
 	Serial.println();
 	for(int k = 0; k < 10; k++) {
 		Serial.print(temperatures[k]);
@@ -179,8 +182,6 @@ void loop() {
 
 // Function for setting up one chip
 void LTCSetup(uint8_t LTCPin) {
-	// Startup
-	spi_enable(SPI_CLOCK_DIV32);
 	uint8_t md_bits;
 	uint8_t MD = MD_NORMAL;
 	uint8_t DCP = DCP_DISABLED;
@@ -241,7 +242,6 @@ void init_cfg() {
 
 // Function for setting configuration bits specifically for discharge cell [bits]
 void init_cfg(int cell) {
-	uint8_t output = 1;
 	for(int i = 0; i < TOTAL_IC; i++) {
 		tx_cfg[i][0] = 0xFE;
 		//tx_cfg[i][1] = 0x04;
@@ -253,19 +253,17 @@ void init_cfg(int cell) {
 		tx_cfg[i][3] = 0x00;
 		// CFGR4 used for DCC 8 - 1
 		// CFGR5 bits 3 - 0 used for DCC 12 - 9
-		for(int j = 0; j < cell - 1; j++) {
-			output *= 2;
-		}
-		if(cell <= 8) {
-			tx_cfg[i][4] = output;
-		} else if(cell > 8) {
-			output <<= 8;
-			tx_cfg[i][5] = 0x20 | output;
+		if(cell == 1) {
+			tx_cfg[i][4] = 0x55;
+			tx_cfg[i][5] = 0x21;
+		} else if(cell == 0) {
+			tx_cfg[i][4] = 0xAA;
+			tx_cfg[i][5] = 0x20;
 		}
 	}
 }
 
-// Function to update global array variables
+// Function to update global array for cell voltages
 void storeData() {
 	maxVoltage = cell_codes[0][0];
 	for(int i = 0 ; i < TOTAL_IC; i++) {
@@ -280,7 +278,7 @@ void storeData() {
 	}
 }
 
-// Function to update temperature and voltage global variables
+// Function to update the lowest temperature voltage in the global variables
 void setData() {
 	// Reset lowest temp
 	lowestTempVoltage = tempVoltages[0];
@@ -312,16 +310,9 @@ void printData() {
 	Serial.print("\t");
 
 	// Cell voltages
-	Serial.print("Cell and Temp Voltages 1 - 9 (V): ");
+	Serial.print("Temp Voltages 1 - 9 (V): ");
 	for(int i = 0 ; i < 9; i++) {
-		Serial.print(cellVoltages[i] * 0.0001, 2);
-		Serial.print(", ");
-	}
-	Serial.print("\t");
-
-	Serial.print("T: ");
-	for(int i = 0 ; i < 9; i++) {
-		Serial.print(tempVoltages[i] * 0.0001, 2);
+		Serial.print(tempVoltages[i] * 0.0001, 4);
 		Serial.print(", ");
 	}
 	Serial.print("\t");
@@ -344,7 +335,7 @@ void printData() {
 	Serial.print("\n");
 }
 
-// Function for converting voltage to Celsius
+// Function for converting voltage to Celsius for the lowest voltage / highest temperature
 void getTemperature() {
 	// y = mx + b
 	// m = -7140.054127
