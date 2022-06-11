@@ -88,7 +88,7 @@ void setup() {
 
 	// SPI configuration stuff
 	SPI.begin();
-	SPI.setClockDivider(SPI_CLOCK_DIV32);
+	SPI.setClockDivider(SPI_CLOCK_DIV64);
 
 	// LTC Setup for all chips
 	LTCSetup(pins[0]);
