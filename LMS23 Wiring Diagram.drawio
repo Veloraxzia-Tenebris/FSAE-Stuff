@@ -1,9 +1,15 @@
-<mxfile host="app.diagrams.net" modified="2023-09-01T17:48:50.933Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0" version="21.7.2" etag="qMt6jzYUWw-7jzwGxvgE" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-01T17:51:41.296Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0" etag="Op90rBUNG6rBHCuAA89g" version="21.7.2" type="github">
   <diagram name="Page-1" id="JPXfJ8LPzCzadp_vGgTz">
-    <mxGraphModel>
+    <mxGraphModel dx="481" dy="306" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="mslCy4u5-Nsj2cdOgmc5-1" value="&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Roboto&quot; face=&quot;Roboto&quot;&gt;Front Panel&lt;br&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mslCy4u5-Nsj2cdOgmc5-2" value="&lt;font face=&quot;Roboto&quot;&gt;Main Roll Hoop&lt;br&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="360" width="80" height="80" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
